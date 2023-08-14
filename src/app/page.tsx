@@ -1,8 +1,50 @@
-import Image from 'next/image'
+"use client"
+import supabase from '@/supabase'
+import { useEffect, useState } from 'react'
+
+async function insertTransaction() {
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert([
+      { user_id: '4c647e9a-e2bb-4570-a9f7-0db2e5b4d41f' },
+    ])
+    .select()
+}
+
+
+type Transaction =
+  {
+    id: string,
+    user_id: string,
+    timestamp: string
+  }
 
 export default function Home() {
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const getTransactions = async () => {
+    let { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('id,timestamp,user_id');
+
+    if (transactions)
+      setTransactions(transactions)
+  }
+
+
+  useEffect(
+    (() => {
+      getTransactions()
+    }
+
+    )
+
+    , [])
   return (
-    <h2>Next Pret</h2>
+    <div>
+      <h2>Next Pret</h2>
+      <button onClick={insertTransaction}>Add</button>
+      {transactions.map(t => (<li key={t.id}>{new Date(t.timestamp).toTimeString()}</li>))}
+    </div>
   )
 
 }
