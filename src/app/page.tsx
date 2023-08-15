@@ -4,15 +4,9 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
-async function insertTransaction() {
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert([{ user_id: "4c647e9a-e2bb-4570-a9f7-0db2e5b4d41f" }])
-    .select();
-}
 
 type Transaction = {
-  id: string;
+  id: number;
   user_id: string;
   timestamp: string;
 };
@@ -46,6 +40,18 @@ const today: dayjs.Dayjs = dayjs().startOf("day");
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  console.log({ transactions });
+  async function insertTransaction() {
+    const { data, error } = await supabase
+      .from("transactions")
+      .insert([{ user_id: "4c647e9a-e2bb-4570-a9f7-0db2e5b4d41f" }])
+      .select();
+  }
+
+  async function deleteTransaction(id: number) {
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+  }
+
   const getTransactions = async () => {
     let { data: transactions, error } = await supabase
       .from("transactions")
@@ -84,14 +90,22 @@ export default function Home() {
         {canUse ? "Track use" : "Can't use it now"}
       </button>
       <p>Today we had {transactions.length}/5 drinks</p>
-      {transactions.map((t) => {
-        const tDate = dayjs(t.timestamp);
-        return (
-          <li className="flex" key={t.id}>
-            {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
-          </li>
-        );
-      })}
+      <ul>
+        {transactions.map((t) => {
+          const tDate = dayjs(t.timestamp);
+          return (
+            <li className="flex gap-1 items-center " key={t.id}>
+              <button
+                className="p-1 border rounded border-red-600 bg-red-600 text-white"
+                onClick={() => deleteTransaction(t.id)}
+              >
+                X
+              </button>
+              {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
