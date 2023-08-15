@@ -3,6 +3,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import logo from "../assets/pret-a-manger-logo.png";
 dayjs.extend(relativeTime);
 
 type Transaction = {
@@ -91,59 +92,62 @@ export default function Home() {
   }, []);
   const canUse = transactions !== null && canHaveADrink(transactions);
   return (
-    <div className="flex flex-col justify-between h-screen">
-      <div className="p-2 flex flex-col gap-2">
-        <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
-        {transactions === null ? (
-          <p>Loading ...</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className={`${canUse ? "text-green-500" : "text-red-500"}`}>
-              {canUse
-                ? "We can order a drink! ☕️"
-                : "We can't have a drink 😭, because " +
-                  reasonsCantHaveADrink(transactions).join(" and ")}
-            </p>
+    <div className="flex justify-center">
+      <div className="flex flex-col justify-between h-screen max-w-[800px] items-center">
+        <div className="p-2 flex flex-col gap-2 items-center">
+          <img className="max-w-[50%]" src={logo.src} alt="Logo" />
+          <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
+          {transactions === null ? (
+            <p>Loading ...</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className={`${canUse ? "text-green-500" : "text-red-500"}`}>
+                {canUse
+                  ? "We can order a drink! ☕️"
+                  : "We can't have a drink 😭, because " +
+                    reasonsCantHaveADrink(transactions).join(" and ")}
+              </p>
+              <button
+                onClick={insertTransaction}
+                disabled={!canUse}
+                className={`p-1 rounded border text-lg ${
+                  canUse ? "bg-green-500" : "bg-red-500"
+                } text-white`}
+              >
+                {canUse ? "Track use" : "Can't use it now"}
+              </button>
+              <p>Today we had {transactions.length}/5 drinks</p>
+              <ul className="flex flex-col gap-1">
+                {transactions.map((t) => {
+                  const tDate = dayjs(t.timestamp);
+                  return (
+                    <li className="flex gap-1 items-center " key={t.id}>
+                      <button
+                        className="px-1 border rounded border-red-600 bg-red-600 text-white"
+                        onClick={() => deleteTransaction(t.id)}
+                      >
+                        X
+                      </button>
+                      {tDate.format("HH:mm")} - {displayDate(tDate)}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+        {appError && (
+          <div className="flex border rouded border-red-500 text-red-500 p-2 gap-2">
             <button
-              onClick={insertTransaction}
-              disabled={!canUse}
-              className={`p-1 rounded border text-lg ${
-                canUse ? "bg-green-500" : "bg-red-500"
-              } text-white`}
+              className="px-1 border rounded border-red-600 bg-red-600 text-white"
+              onClick={() => setAppError(null)}
             >
-              {canUse ? "Track use" : "Can't use it now"}
+              X
             </button>
-            <p>Today we had {transactions.length}/5 drinks</p>
-            <ul className="flex flex-col gap-1">
-              {transactions.map((t) => {
-                const tDate = dayjs(t.timestamp);
-                return (
-                  <li className="flex gap-1 items-center " key={t.id}>
-                    <button
-                      className="px-1 border rounded border-red-600 bg-red-600 text-white"
-                      onClick={() => deleteTransaction(t.id)}
-                    >
-                      X
-                    </button>
-                    {tDate.format("HH:mm")} - {displayDate(tDate)}
-                  </li>
-                );
-              })}
-            </ul>
+            {appError}
           </div>
         )}
       </div>
-      {appError && (
-        <div className="flex border rouded border-red-500 text-red-500 p-2 gap-2">
-          <button
-            className="px-1 border rounded border-red-600 bg-red-600 text-white"
-            onClick={() => setAppError(null)}
-          >
-            X
-          </button>
-          {appError}
-        </div>
-      )}
     </div>
   );
 }
