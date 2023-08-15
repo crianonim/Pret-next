@@ -40,6 +40,9 @@ const today: dayjs.Dayjs = dayjs().startOf("day");
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [appError, setAppError] = useState<string | null>(
+    "There was a problem"
+  );
   console.log({ transactions });
   async function insertTransaction() {
     const { data, error } = await supabase
@@ -49,13 +52,14 @@ export default function Home() {
     console.log("INSERT", { data }, { error });
 
     if (error || !data?.[0]) {
-      // set error
+      setAppError("There was a problem registering the use.");
       return;
     } else {
       const { id, user_id, timestamp } = data[0];
       setTransactions((tr) =>
         tr === null ? null : [{ id, user_id, timestamp }, ...tr]
       );
+      setAppError(null);
     }
   }
 
@@ -65,8 +69,9 @@ export default function Home() {
       setTransactions((ts) =>
         ts === null ? null : ts?.filter((t) => t.id != id)
       );
+      setAppError(null);
     } else {
-      //set error
+      setAppError("There was a problem deleting a transaction.");
     }
   }
 
@@ -89,44 +94,57 @@ export default function Home() {
   }, []);
   const canUse = transactions !== null && canHaveADrink(transactions);
   return (
-    <div className="p-2 flex flex-col gap-2">
-      <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
-      {transactions === null ? (
-        <p>Loading ...</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <p className={`${canUse ? "text-green-500" : "text-red-500"}`}>
-            {canUse
-              ? "We can order a drink! ☕️"
-              : "We can't have a drink 😭, because " +
-                reasonsCantHaveADrink(transactions).join(" and ")}
-          </p>
+    <div className="flex flex-col justify-between h-screen">
+      <div className="p-2 flex flex-col gap-2">
+        <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
+        {transactions === null ? (
+          <p>Loading ...</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className={`${canUse ? "text-green-500" : "text-red-500"}`}>
+              {canUse
+                ? "We can order a drink! ☕️"
+                : "We can't have a drink 😭, because " +
+                  reasonsCantHaveADrink(transactions).join(" and ")}
+            </p>
+            <button
+              onClick={insertTransaction}
+              disabled={!canUse}
+              className={`p-1 rounded border text-lg ${
+                canUse ? "bg-green-500" : "bg-red-500"
+              } text-white`}
+            >
+              {canUse ? "Track use" : "Can't use it now"}
+            </button>
+            <p>Today we had {transactions.length}/5 drinks</p>
+            <ul className="flex flex-col gap-1">
+              {transactions.map((t) => {
+                const tDate = dayjs(t.timestamp);
+                return (
+                  <li className="flex gap-1 items-center " key={t.id}>
+                    <button
+                      className="px-1 border rounded border-red-600 bg-red-600 text-white"
+                      onClick={() => deleteTransaction(t.id)}
+                    >
+                      X
+                    </button>
+                    {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+      {appError && (
+        <div className="flex border rouded border-red-500 text-red-500 p-2 gap-2">
           <button
-            onClick={insertTransaction}
-            disabled={!canUse}
-            className={`p-1 rounded border text-lg ${
-              canUse ? "bg-green-500" : "bg-red-500"
-            } text-white`}
+            className="px-1 border rounded border-red-600 bg-red-600 text-white"
+            onClick={() => setAppError(null)}
           >
-            {canUse ? "Track use" : "Can't use it now"}
+            X
           </button>
-          <p>Today we had {transactions.length}/5 drinks</p>
-          <ul className="flex flex-col gap-1">
-            {transactions.map((t) => {
-              const tDate = dayjs(t.timestamp);
-              return (
-                <li className="flex gap-1 items-center " key={t.id}>
-                  <button
-                    className="px-1 border rounded border-red-600 bg-red-600 text-white"
-                    onClick={() => deleteTransaction(t.id)}
-                  >
-                    X
-                  </button>
-                  {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
-                </li>
-              );
-            })}
-          </ul>
+          {appError}
         </div>
       )}
     </div>
