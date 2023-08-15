@@ -3,9 +3,7 @@ import supabase from "@/supabase";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import isToday from "dayjs/plugin/isToday";
 dayjs.extend(relativeTime);
-dayjs.extend(isToday);
 async function insertTransaction() {
   const { data, error } = await supabase
     .from("transactions")
@@ -24,19 +22,28 @@ function displayDate(date: dayjs.Dayjs) {
   return diff < 60 ? diff + " minutes ago" : date.fromNow();
 }
 
+function reasonsCantHaveADrink(transactions: Transaction[]): string[] {
+  let reasons: string[] = [];
+  if (transactions.length == 0) return reasons;
+  const last = lastDrinkMinutesAgo(transactions);
+  if (last < 30) reasons.push(`we had a drink ${last} minutes ago`);
+  const howMany = transactions.length;
+  if (howMany > 5) reasons.push(`we can't have more drinks, we had ${howMany}`);
+  return reasons;
+}
+
+function lastDrinkMinutesAgo(transactions: Transaction[]): number {
+  if (!transactions[0]) return -1;
+  return now.diff(dayjs(transactions[0].timestamp), "minutes");
+}
+
 function canHaveADrink(transactions: Transaction[]): boolean {
-  if (transactions.length == 0) return true;
-  else
-    return (
-      dayjs(transactions[0].timestamp).diff(now, "minutes") > 30 &&
-      transactions.length < 5
-    );
+  return reasonsCantHaveADrink(transactions).length === 0;
 }
 const now: dayjs.Dayjs = dayjs();
 
 const today: dayjs.Dayjs = dayjs().startOf("day");
 
-console.log(now);
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const getTransactions = async () => {
@@ -56,28 +63,32 @@ export default function Home() {
   useEffect(() => {
     getTransactions();
   }, []);
+  const canUse = canHaveADrink(transactions);
   return (
-    <div>
-      <h2>Next Pret</h2>
-      <p>
-        Last drink today was{" "}
-        {transactions.length > 0 &&
-          now.diff(dayjs(transactions[0].timestamp), "minutes")}{" "}
-        minutes ago
+    <div className="p-2 flex flex-col gap-2">
+      <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
+
+      <p className={`${canUse ? "text-green-500" : "text-red-500"}`}>
+        {canUse
+          ? "We can have a drink"
+          : "We can't have a drink because " +
+            reasonsCantHaveADrink(transactions).join(" and ")}
       </p>
       <button
         onClick={insertTransaction}
-        disabled={!canHaveADrink(transactions)}
+        disabled={!canUse}
+        className={`p-1 rounded border text-lg ${
+          canUse ? "bg-green-500" : "bg-red-500"
+        } text-white`}
       >
-        Have a Drink!
+        {canUse ? "Track use" : "Can't use it now"}
       </button>
       <p>Today we had {transactions.length}/5 drinks</p>
       {transactions.map((t) => {
         const tDate = dayjs(t.timestamp);
         return (
-          <li key={t.id}>
+          <li className="flex" key={t.id}>
             {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
-            {tDate.isToday() ? "today" : "not"}
           </li>
         );
       })}
