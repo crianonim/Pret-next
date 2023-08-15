@@ -125,7 +125,7 @@ export default function Home() {
                     >
                       X
                     </button>
-                    {tDate.format("HH:mm")} - {displayDate(tDate)}x{" "}
+                    {tDate.format("HH:mm")} - {displayDate(tDate)}
                   </li>
                 );
               })}
