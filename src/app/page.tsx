@@ -1,5 +1,5 @@
 "use client";
-import supabase from "@/supabase";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -10,6 +10,8 @@ type Transaction = {
   user_id: string;
   timestamp: string;
 };
+
+const supabase = createClientComponentClient();
 
 function displayDate(date: dayjs.Dayjs) {
   const diff = now.diff(date, "minutes");
@@ -40,9 +42,7 @@ const today: dayjs.Dayjs = dayjs().startOf("day");
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
-  const [appError, setAppError] = useState<string | null>(
-    "There was a problem"
-  );
+  const [appError, setAppError] = useState<string | null>(null);
   console.log({ transactions });
   async function insertTransaction() {
     const { data, error } = await supabase
