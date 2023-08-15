@@ -14,7 +14,7 @@ type Transaction = {
 const supabase = createClientComponentClient();
 
 function displayDate(date: dayjs.Dayjs) {
-  const diff = now.diff(date, "minutes");
+  const diff = dayjs().diff(date, "minutes");
   return diff < 60 ? diff + " minutes ago" : date.fromNow();
 }
 
@@ -30,15 +30,12 @@ function reasonsCantHaveADrink(transactions: Transaction[]): string[] {
 
 function lastDrinkMinutesAgo(transactions: Transaction[]): number {
   if (!transactions[0]) return -1;
-  return now.diff(dayjs(transactions[0].timestamp), "minutes");
+  return dayjs().diff(dayjs(transactions[0].timestamp), "minutes");
 }
 
 function canHaveADrink(transactions: Transaction[]): boolean {
   return reasonsCantHaveADrink(transactions).length === 0;
 }
-const now: dayjs.Dayjs = dayjs();
-
-const today: dayjs.Dayjs = dayjs().startOf("day");
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
@@ -79,7 +76,7 @@ export default function Home() {
     let { data: transactions, error } = await supabase
       .from("transactions")
       .select("id,timestamp,user_id")
-      .gte("timestamp", today.toISOString());
+      .gte("timestamp", dayjs().startOf("day").toISOString());
     if (transactions)
       setTransactions(
         transactions.sort(
