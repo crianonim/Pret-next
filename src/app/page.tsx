@@ -210,9 +210,6 @@ export default function Home() {
                         <span>
                           {tDate.format("HH:mm")} - {displayDate(tDate)}
                         </span>
-                        <span className="border border-slate-500 px-1">
-                          {user?.user_id === t.user_id ? "You" : "Not you"}
-                        </span>
                       </li>
                     );
                   })}
