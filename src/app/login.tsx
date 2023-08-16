@@ -25,7 +25,7 @@ function Login({ supabaseClient }: LoginProps) {
       <form
         id="login_form"
         onSubmit={handleSubmit}
-        autoComplete="true"
+        autoComplete="on"
         className="flex gap-2 flex-col items-center justify-center w-full"
       >
         <label className="text-sm" htmlFor="login_email">
