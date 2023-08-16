@@ -31,9 +31,10 @@ export default function Home() {
   const [lastRefreshed, setLastRefreshed] = useState<dayjs.Dayjs>(dayjs());
   console.log({ transactions });
   async function insertTransaction() {
+    if (!user) return;
     const { data, error } = await supabase
       .from("transactions")
-      .insert([{ user_id: "4c647e9a-e2bb-4570-a9f7-0db2e5b4d41f" }])
+      .insert([{ user_id: user.user_id }])
       .select();
     console.log("INSERT", { data }, { error });
 
@@ -129,7 +130,12 @@ export default function Home() {
         <div className="p-2 flex flex-col gap-2 items-center">
           <img className="max-w-[50%]" src={logo.src} alt="Logo" />
           {!user ? (
-            <Auth supabaseClient={supabase} providers={[]} redirectTo="/" />
+            <Auth
+              supabaseClient={supabase}
+              providers={[]}
+              redirectTo="/"
+              showLinks={false}
+            />
           ) : (
             <button
               onClick={() =>
@@ -153,15 +159,19 @@ export default function Home() {
                   : "We can't have a drink 😭, because " +
                     reasonsCantHaveADrink(transactions).join(" and ")}
               </p>
-              <button
-                onClick={insertTransaction}
-                disabled={!canUse}
-                className={`p-1 rounded border text-lg ${
-                  canUse ? "bg-green-500" : "bg-red-500"
-                } text-white`}
-              >
-                {canUse ? "Track use" : "Can't use it now"}
-              </button>
+              {user ? (
+                <button
+                  onClick={insertTransaction}
+                  disabled={!canUse}
+                  className={`p-1 rounded border text-lg ${
+                    canUse ? "bg-green-500" : "bg-red-500"
+                  } text-white`}
+                >
+                  {canUse ? "Track use" : "Can't use it now"}
+                </button>
+              ) : (
+                <p>Log in to track usage</p>
+              )}
               <p>Today we had {transactions.length}/5 drinks</p>
               <div className="flex justify-between items-center">
                 <span>Last refreshed {displayDate(lastRefreshed)} </span>
@@ -172,19 +182,25 @@ export default function Home() {
                   Refresh
                 </button>
               </div>
-
               <ul className="flex flex-col gap-1">
                 {transactions.map((t) => {
                   const tDate = dayjs(t.timestamp);
                   return (
                     <li className="flex gap-1 items-center " key={t.id}>
-                      <button
-                        className="px-1 border rounded border-red-600 bg-red-600 text-white"
-                        onClick={() => deleteTransaction(t.id)}
-                      >
-                        X
-                      </button>
-                      {tDate.format("HH:mm")} - {displayDate(tDate)}
+                      {user?.user_id === t.user_id && (
+                        <button
+                          className="px-1 border rounded border-red-600 bg-red-600 text-white"
+                          onClick={() => deleteTransaction(t.id)}
+                        >
+                          X
+                        </button>
+                      )}
+                      <span>
+                        {tDate.format("HH:mm")} - {displayDate(tDate)}
+                      </span>
+                      <span className="border border-slate-500 px-1">
+                        {user?.user_id === t.user_id ? "You" : "Not you"}
+                      </span>
                     </li>
                   );
                 })}
