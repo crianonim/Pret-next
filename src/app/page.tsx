@@ -1,10 +1,10 @@
 "use client";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import logo from "../assets/pret-a-manger-logo.png";
-import { Auth } from "@supabase/auth-ui-react";
+import Login from "./login";
 dayjs.extend(relativeTime);
 
 type Transaction = {
@@ -15,7 +15,7 @@ type Transaction = {
 
 const supabase = createClientComponentClient();
 
-function displayDate(date: dayjs.Dayjs) {
+function displayDate(date: Dayjs) {
   const diff = dayjs().diff(date, "minutes");
   return diff < 60 ? diff + " minutes ago" : date.fromNow();
 }
@@ -78,6 +78,19 @@ export default function Home() {
       setLastRefreshed(dayjs());
     }
   };
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          setUser({
+            user_id: session.user.id,
+            email: session.user.email || "user without email",
+          });
+        }
+      }
+    );
+    return () => authListener.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     getTransactions();
@@ -116,39 +129,35 @@ export default function Home() {
     return reasonsCantHaveADrink(transactions).length === 0;
   }
   const canUse = transactions !== null && canHaveADrink(transactions);
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session) {
-      setUser({
-        user_id: session.user.id,
-        email: session.user.email || "user without email",
-      });
-    }
-  });
+
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center text-slate-700">
       <div className="flex flex-col justify-between h-screen max-w-[800px] items-center">
         <div className="p-2 flex flex-col gap-2 items-center">
           <img className="max-w-[50%]" src={logo.src} alt="Logo" />
-          {!user ? (
-            <Auth
-              supabaseClient={supabase}
-              providers={[]}
-              redirectTo="/"
-              showLinks={false}
-            />
-          ) : (
-            <button
-              onClick={() =>
-                supabase.auth.signOut().then(({ error }) => {
-                  console.log("signout error", error);
-                  setUser(null);
-                })
-              }
-            >
-              Sign Out {user.email}
-            </button>
-          )}
           <h2 className="flex justify-center text-lg mb-4">Five-a-Day 😜</h2>
+
+          {!user ? (
+            <Login supabaseClient={supabase} />
+          ) : (
+            <div className="flex justify-between gap-1 items-center w-full">
+              <div>
+                Logged in as <span className="text-black">{user.email}</span>.
+              </div>
+              <button
+                onClick={() =>
+                  supabase.auth.signOut().then(({ error }) => {
+                    console.log("signout error", error);
+                    setUser(null);
+                  })
+                }
+                className="border border-red-500 bg-red-500 text-white p-1 rounded"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+
           {transactions === null ? (
             <p>Loading ...</p>
           ) : (
@@ -182,29 +191,33 @@ export default function Home() {
                   Refresh
                 </button>
               </div>
-              <ul className="flex flex-col gap-1">
-                {transactions.map((t) => {
-                  const tDate = dayjs(t.timestamp);
-                  return (
-                    <li className="flex gap-1 items-center " key={t.id}>
-                      {user?.user_id === t.user_id && (
+              {user && (
+                <ul className="flex flex-col gap-1">
+                  {transactions.map((t) => {
+                    const tDate = dayjs(t.timestamp);
+                    return (
+                      <li className="flex gap-1 items-center " key={t.id}>
                         <button
-                          className="px-1 border rounded border-red-600 bg-red-600 text-white"
+                          className="px-1 border rounded border-red-600 bg-red-600 text-white
+                         disabled:invisible
+                          "
                           onClick={() => deleteTransaction(t.id)}
+                          disabled={!user || user.user_id != t.user_id}
                         >
                           X
                         </button>
-                      )}
-                      <span>
-                        {tDate.format("HH:mm")} - {displayDate(tDate)}
-                      </span>
-                      <span className="border border-slate-500 px-1">
-                        {user?.user_id === t.user_id ? "You" : "Not you"}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+
+                        <span>
+                          {tDate.format("HH:mm")} - {displayDate(tDate)}
+                        </span>
+                        <span className="border border-slate-500 px-1">
+                          {user?.user_id === t.user_id ? "You" : "Not you"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           )}
         </div>
