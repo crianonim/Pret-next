@@ -30,14 +30,15 @@ export default function Home() {
   const [now, setNow] = useState<dayjs.Dayjs>(dayjs());
   const [lastRefreshed, setLastRefreshed] = useState<dayjs.Dayjs>(dayjs());
   const [minutesAgo, setMinutesAgo] = useState(0);
+  const [comment, setComment] = useState("");
   console.log({ transactions });
   async function insertTransaction() {
     if (!user) return;
     const timestamp = now.subtract(minutesAgo, "minutes").toISOString();
-
+    const db_comment = comment === "" ? null : comment;
     const { data, error } = await supabase
       .from("transactions")
-      .insert([{ user_id: user.user_id, timestamp }])
+      .insert([{ user_id: user.user_id, timestamp, comment: db_comment }])
       .select();
     console.log("INSERT", { data }, { error });
 
@@ -51,6 +52,7 @@ export default function Home() {
       );
       setAppError(null);
       setMinutesAgo(0);
+      setComment("");
     }
   }
 
@@ -199,6 +201,11 @@ export default function Home() {
                             }
                           />
                         </div>
+                        <textarea
+                          className="border"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        ></textarea>
                       </div>
                     </details>
                   </div>
