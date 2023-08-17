@@ -29,12 +29,15 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [now, setNow] = useState<dayjs.Dayjs>(dayjs());
   const [lastRefreshed, setLastRefreshed] = useState<dayjs.Dayjs>(dayjs());
+  const [minutesAgo, setMinutesAgo] = useState(0);
   console.log({ transactions });
   async function insertTransaction() {
     if (!user) return;
+    const timestamp = now.subtract(minutesAgo, "minutes").toISOString();
+
     const { data, error } = await supabase
       .from("transactions")
-      .insert([{ user_id: user.user_id }])
+      .insert([{ user_id: user.user_id, timestamp }])
       .select();
     console.log("INSERT", { data }, { error });
 
@@ -47,6 +50,7 @@ export default function Home() {
         tr === null ? null : [{ id, user_id, timestamp }, ...tr]
       );
       setAppError(null);
+      setMinutesAgo(0);
     }
   }
 
@@ -169,15 +173,36 @@ export default function Home() {
                     reasonsCantHaveADrink(transactions).join(" and ")}
               </p>
               {user ? (
-                <button
-                  onClick={insertTransaction}
-                  disabled={!canUse}
-                  className={`p-1 rounded border text-lg ${
-                    canUse ? "bg-green-500" : "bg-red-500"
-                  } text-white`}
-                >
-                  {canUse ? "Track use" : "Can't use it now"}
-                </button>
+                canUse && (
+                  <div className="flex flex-col">
+                    <button
+                      onClick={insertTransaction}
+                      className={`p-1 rounded border text-lg bg-green-500
+                   text-white`}
+                    >
+                      Track usage now
+                    </button>
+                    <details className="">
+                      <summary className="text-sm select-none">
+                        More options
+                      </summary>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          <label htmlFor="minutesAgo">Minutes Ago</label>
+                          <input
+                            value={minutesAgo}
+                            className="p-1 border"
+                            type="number"
+                            id="minutesAgo"
+                            onChange={(e) =>
+                              setMinutesAgo(e.target.valueAsNumber)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                )
               ) : (
                 <p>Log in to track usage</p>
               )}
