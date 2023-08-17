@@ -11,6 +11,7 @@ type Transaction = {
   id: number;
   user_id: string;
   timestamp: string;
+  comment?: string;
 };
 
 const supabase = createClientComponentClient();
@@ -71,7 +72,7 @@ export default function Home() {
   const getTransactions = async () => {
     let { data: transactions, error } = await supabase
       .from("transactions")
-      .select("id,timestamp,user_id")
+      .select("id,timestamp,user_id,comment")
       .gte("timestamp", dayjs().startOf("day").toISOString());
 
     if (transactions) {
@@ -184,13 +185,15 @@ export default function Home() {
                     >
                       Track usage now
                     </button>
-                    <details className="">
-                      <summary className="text-sm select-none">
+                    <details className="my-1">
+                      <summary className="text-xl select-none">
                         More options
                       </summary>
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1">
-                          <label htmlFor="minutesAgo">Minutes Ago</label>
+                          <label className="text-sm" htmlFor="minutesAgo">
+                            Minutes Ago
+                          </label>
                           <input
                             value={minutesAgo}
                             className="p-1 border"
@@ -201,7 +204,11 @@ export default function Home() {
                             }
                           />
                         </div>
+                        <label className="text-sm" htmlFor="comment">
+                          Comment
+                        </label>
                         <textarea
+                          id="comment"
                           className="border"
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
@@ -239,9 +246,14 @@ export default function Home() {
                           X
                         </button>
 
-                        <span>
+                        <span className="shrink-0">
                           {tDate.format("HH:mm")} - {displayDate(tDate)}
                         </span>
+                        {t.comment && (
+                          <span className="shrink whitespace-nowrap text-ellipsis overflow-hidden text-sm italic text-slate-500">
+                            {t.comment}
+                          </span>
+                        )}
                       </li>
                     );
                   })}
